@@ -1,72 +1,115 @@
 # OutdoorSafe – Daily Outdoor Conditions
 
-OutdoorSafe is a small Android utility app for checking **air quality and UV exposure before going outside**. It is designed for a quick decision before a walk, commute or outdoor workout. Default location: Singapore.
+OutdoorSafe is a small Android utility app that helps users **check air quality and UV exposure before going outside**. It is designed for everyday decisions such as a walk, commute, or outdoor workout. The main screen shows the most important conditions first, with more details available by scrolling.
 
-Built from the CP3406 MobileTech Utility App teaching template. The original two-tab Compose navigation was retained and extended with a network-backed dashboard.
+This project was developed from the **CP3406 MobileTech Utility App teaching template**. It retains a simple **Today / Settings** layout and adds data from the Open-Meteo Air Quality API.
+
+## Screenshots
+
+| Today | Settings |
+| :--: | :--: |
+| <img src="docs/screenshots/today.png" alt="OutdoorSafe Today screen showing colour-coded AQI and UV cards" width="300"> | <img src="docs/screenshots/settings.png" alt="OutdoorSafe Settings screen showing city, AQI standard and particle display options" width="300"> |
+
+**Offline error handling:**
+
+<img src="docs/screenshots/offline-error.png" alt="OutdoorSafe displays a connection error and Try again button when offline" width="260">
+
+Screenshots were captured on a Pixel 7 Android emulator on 29 October 2026. The reported AQI and UV values change with location and forecast time.
 
 ## Features
 
-- **Today:** current US/European air quality index (AQI), UV index, simple status and outdoor activity guidance.
-- Optional PM2.5 and PM10 concentration cards (µg/m³) and a short hourly forecast list.
-- **Settings:** choose Singapore, Seoul, Sydney or London; choose US or European AQI scale; show/hide particle levels. Settings immediately control Today.
-- Data fetched from the **Open-Meteo Air Quality API** with Retrofit; automatic loading, refresh and retry on connection failures.
-- No login or GPS permission. The user explicitly selects a city. Settings last for the current app session, as allowed in Assessment 1.
+### Today
 
-The figures are **model-based estimates**, not readings from a local live sensor. The app is informational and does not promise personal safety. Both US and European AQI ratings use the corresponding scale (the numeric values are not interchangeable).
+- A summary of the selected city's **US AQI or European AQI** and **UV index**.
+- Separate colour-coded condition cards, with written category labels so that colour is not the only indication of status.
+- Short air-quality and sun-exposure guidance based on the displayed category.
+- Optional **PM2.5 and PM10** concentrations in µg/m³.
+- A list of upcoming hourly AQI and UV estimates.
+- **Refresh** to request updated data; loading, error and retry states if a request fails.
+
+### Settings
+
+- Select **Singapore, Seoul, Sydney or London**.
+- Switch between **US AQI** and **European AQI**, which use different index scales.
+- Show or hide particulate information on the Today screen.
+- Changes affect Today immediately. As permitted by the A1 brief, settings are kept only for the current app session.
+
+The app does **not** request GPS location, account sign-in, or personal information. The user selects a city manually.
 
 ## How to run
 
-1. Open the `OutdoorSafe` folder in Android Studio (not the ZIP file itself).
-2. Allow Gradle Sync to complete. Internet is required to fetch dependencies and air-quality data.
-3. Select an emulator (for example Pixel 7) and run the `app` configuration.
-4. On Today, check the AQI/UV cards; open Settings to switch the city and AQI scale. Return to Today to see the updated data and labels.
-5. Run local JVM tests through `app/src/test` or `./gradlew testDebugUnitTest`.
+1. Clone or download this repository and open its root folder in **Android Studio**.
+2. Allow Gradle Sync to complete.
+3. Select an emulator (tested with **Pixel 7, API 37**) and run the `app` configuration.
+4. Ensure the emulator has internet access to load the Open-Meteo forecast.
+5. Open **Settings** to change the city, AQI scale, or particle visibility. Return to **Today** to check the updated display.
 
-The Open-Meteo endpoint used is `https://air-quality-api.open-meteo.com/v1/air-quality`. It does **not** need an API key for non-commercial access under the provider's terms.
+Run local unit tests from the project root:
 
-## Files and architecture
+```bash
+bash gradlew :app:testDebugUnitTest
+```
 
-| File | Responsibility |
+On macOS, `bash gradlew ...` works even if the Gradle wrapper does not yet have executable permission.
+
+## Technical design
+
+The app uses **Kotlin, Jetpack Compose, Material 3, StateFlow, coroutines, Retrofit and Gson**. The implementation separates remote data, state handling and interface rendering.
+
+| File | Main responsibility |
 | --- | --- |
-| `MainActivity.kt` | Two-tab navigation and Compose screen state |
-| `OutdoorViewModel.kt` | StateFlow, city/scale/settings state, refresh and errors |
-| `data/AirQualityApi.kt` | Retrofit endpoint and JSON response DTOs |
-| `data/OutdoorRepository.kt` | Network data mapping, validation, hourly readings |
-| `model/OutdoorModels.kt` | Domain models and available cities |
-| `ui/ConditionsScreen.kt` | Main dashboard, metric cards, advice and hourly list |
-| `ui/SettingsScreen.kt` | Location, AQI standard and particulate display controls |
-| `ui/ConditionsFormat.kt` | Pure AQI and UV thresholds and display helpers |
+| `MainActivity.kt` | App entry point and navigation between Today and Settings |
+| `OutdoorViewModel.kt` | UI state, current settings, refreshing data and network error handling |
+| `data/AirQualityApi.kt` | Retrofit API definition and response data types |
+| `data/OutdoorRepository.kt` | Fetches and validates Open-Meteo values; maps API responses into app models |
+| `model/OutdoorModels.kt` | City, settings and forecast models |
+| `ui/ConditionsScreen.kt` | Today summary, conditions, guidance and hourly list |
+| `ui/SettingsScreen.kt` | City, AQI standard and particle display controls |
+| `ui/ConditionsFormat.kt` | AQI/UV categories, labels and value formatting |
+| `ui/StatusColors.kt` | Condition-based colours for the light and dark themes |
 
-## Tests / evidence to collect
+**Data flow:** Open-Meteo API → Retrofit / Repository → ViewModel (`StateFlow`) → Jetpack Compose screens.
 
-- Unit tests cover AQI threshold categories, UV bands, missing data, and repository mapping with a fake service.
-- **Student to verify:** Gradle Sync and emulator run, refresh, both AQI standards, switching cities, PM switch, offline retry.
-- **Student to add:** screenshots of Today and Settings, Android Studio test results, and genuine Git commits describing actual changes.
+The selected city triggers a new API request; changing the AQI scale or particle visibility updates the existing display state without an unnecessary location fetch.
 
-## Constraints
+## Testing
 
-- Internet required; no offline cache.
-- Forecasts may be unavailable for some variables/regions; missing fields show `—` rather than an invented zero.
-- City coordinates represent central urban locations, not device GPS.
-- No location/background tracking, alert notifications or medical advice.
+The following tests were **performed on 29 October 2026** using Android Studio and a Pixel 7 emulator.
 
-## Data attribution and sources
+| Test | Observed result |
+| --- | --- |
+| Open Today while online | Data displayed for Singapore, including AQI, UV and particle values |
+| Change city to Seoul | City, country, local time and condition data changed |
+| Change US AQI to European AQI | The displayed scale, value and category changed |
+| Hide particle levels | PM2.5/PM10 section was removed from Today |
+| Show condition-dependent colours | Singapore US AQI Moderate displayed in yellow and UV Low in green |
+| Disable emulator internet and refresh | App showed a connection message and **Try again** instead of crashing |
+| Re-enable internet and select Try again | Normal dashboard returned with new values |
+| Run local unit tests | `bash gradlew :app:testDebugUnitTest` returned **BUILD SUCCESSFUL** after correcting the repository test structure |
 
-Data provided by **Open-Meteo** and **Copernicus Atmosphere Monitoring Service (CAMS)**, whose global model supplies the estimates. The provider requires attribution to Open-Meteo and CAMS; an in-app credit is also included.
+The unit tests cover AQI/UV category boundaries, value formatting, missing/invalid response values and Repository response mapping with a fake API. These are local unit tests; the full Android build was additionally exercised through the working emulator screenshots above.
+
+The test report is generated locally at `app/build/reports/tests/testDebugUnitTest/index.html` when the Gradle task is run. That generated build folder is not committed to Git.
+
+## Design choices and limitations
+
+- **At a glance:** AQI and UV are placed first, followed by short advice and optional details.
+- **Clear meaning:** Condition labels accompany colours for accessibility. US AQI and European AQI are not treated as interchangeable numbers.
+- **Error states:** No fake zero is shown when data is missing; the screen provides a retry action for network failures.
+- **Privacy:** Manual city choice avoids the need for a device location permission.
+- **Forecast limitations:** The data comes from atmospheric forecast models, **not live local air-quality sensors**. It may differ from local monitoring stations and should not be treated as a guarantee of safety.
+- **Scope:** The app requires internet access and does not have offline caching, push notifications or persistent settings.
+
+## Data sources and attribution
+
+Data from **Open-Meteo Air Quality API**, including model data from the **Copernicus Atmosphere Monitoring Service (CAMS)**. The app also shows attribution at the bottom of Today.
 
 - [Open-Meteo Air Quality API documentation](https://open-meteo.com/en/docs/air-quality-api)
-- [Open-Meteo's API specification](https://github.com/open-meteo/open-meteo/blob/main/openapi/air-quality.yml)
 - [Open-Meteo terms](https://open-meteo.com/en/terms)
+- CP3406 MobileTech Utility App teaching template (provided by JCU)
 
-Teaching starter: CP3406 MobileTech Utility App template. Sources and any GenAI assistance must also be recorded in the university's required declaration, per the updated assessment instructions. The student should write the self-reflection from **actual** decisions and testing experiences rather than a fabricated account.
+## GenAI use and academic integrity
 
-## Assessment 1 alignment
+Generative AI was used to assist with the initial app implementation, code structure, UI revisions, debugging, tests and documentation drafts. The project was opened and tested in Android Studio, including checking setting changes, unit tests, and network failure/recovery on an emulator. **The official assessment declaration should be completed separately, following the latest course instructions.**
 
-| Criterion | Evidence |
-| --- | --- |
-| Code quality (20%) | Small, named files; distinct ViewModel/Repository/model/UI responsibilities |
-| Purpose and UX (20%) | AQI + UV at a glance before outdoor activity, followed by relevant details |
-| Android APIs (20%) | Internet permission, Retrofit HTTP API, error/loading states |
-| Jetpack Compose (20%) | Material 3, two responsive screens, reusable cards, state-driven settings |
-| GitHub (10%) | Add actual incremental commits and screenshots, keep README updated |
-| Self-reflection (10%) | Reflect on actual implementation issues, technical learning and decisions |
+This repository records the project's development and the actual changes made during testing and refinement.

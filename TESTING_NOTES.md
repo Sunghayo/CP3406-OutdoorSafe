@@ -1,29 +1,34 @@
-# Local testing checklist (complete on your own device)
+# OutdoorSafe — Testing Notes
 
-Record the date, device, and the actual result for each test. Don't mark untested items as passed.
+**Test date:** 29 October 2026  
+**Environment:** Android Studio; Pixel 7 Android emulator (API 37); macOS  
+**Command used:** `bash gradlew :app:testDebugUnitTest`
 
-| Test | Expected | Result / notes |
+| Check | Actual observation | Status |
 | --- | --- | --- |
-| First launch with Internet | Today loads the selected city's AQI and UV or a clear unavailable state | |
-| Refresh | Status updates without crashing | |
-| Settings -> Seoul | Today switches to Seoul and fetches new data | |
-| US -> European AQI | Label, number and category change to the selected scale | |
-| Hide particle details | PM2.5/PM10 card disappears from Today | |
-| Turn off Internet and refresh | Friendly error and Try again button; no fake AQI zero | |
-| Reconnect and retry | Data loads again | |
-| Scroll on Pixel 7 | Content is readable and does not overlap navigation bar | |
-| Rotate / change font size | Verify basic usability if supported | |
-| Run unit tests | Record actual Android Studio test result | |
+| Launch Today online | Singapore AQI/UV appeared and the forecast model notice was visible | Passed |
+| Settings navigation | Today and Settings navigation worked | Passed |
+| Change location | Singapore → Seoul updated city/country and conditions | Passed |
+| AQI scale | US → European updated index and category | Passed |
+| Particle toggle | Turning off details removed PM2.5/PM10 section | Passed |
+| UI severity | Moderate AQI shown yellow; Low UV shown green | Passed |
+| Offline | Disabled network and refreshed; error message and Try again appeared without app closing | Passed |
+| Recovery | Re-enabled network and tapped Try again; dashboard data returned | Passed |
+| Local unit tests | Gradle task ended with `BUILD SUCCESSFUL in 4s` | Passed |
+| Other screen sizes | Not yet tested | Not tested |
+| Dark mode | Palette defined in code; manual screenshot not supplied | Not tested |
+| Screen rotation / large font | Not yet tested | Not tested |
 
-## Reflection prompts
+## Issue encountered during testing
 
-Write in your own words, using events you actually observed:
+The first unit-test attempt failed with `OutdoorRepositoryTest > initializationError`. A change to the test's `runBlocking` function resulted in a missing `}` compiler error. After correcting the test function and final brace, the Gradle unit test task succeeded.
 
-1. What made you choose an outdoor-condition monitoring utility?
-2. How did you decide which metrics belong in the top summary?
-3. What did you learn about fetching and mapping API data in Kotlin?
-4. What bugs/errors did you encounter and how did you fix them?
-5. How did you handle unavailable or potentially misleading environmental data?
-6. What would you improve next?
+There was also a source-copy issue when transferring a UI improvement into the Git clone: many existing source/resource files appeared as deleted. Restoring only missing tracked files with `git ls-files -d -z | xargs -0 git restore --worktree --` left the intended UI changes intact.
 
-Include citations and the university-required declaration for any use of GenAI or external materials.
+## Evidence
+
+- `docs/screenshots/today.png` — working Today screen after the colour change
+- `docs/screenshots/settings.png` — Settings controls
+- `docs/screenshots/offline-error.png` — disconnected state and retry button
+
+Screenshots support the visible UI behaviour. Details such as the exact live readings and the number of unit tests can change between runs; do not present screen values as universally fixed.
