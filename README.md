@@ -109,6 +109,19 @@ The following tests were **performed on 29 October 2026** using Android Studio a
 | Check Settings with larger text | Location and AQI options remained readable, with expanded spacing and vertical scrolling |
 | Run local unit tests | `bash gradlew :app:testDebugUnitTest` returned **BUILD SUCCESSFUL** after correcting the repository test structure |
 
+### Final Build Verification
+
+The final project build and local unit tests were verified
+using Android Studio on 29 October 2026.
+
+Command:
+`bash gradlew :app:assembleDebug :app:testDebugUnitTest`
+
+Result: BUILD SUCCESSFUL
+
+A second execution also completed successfully with all
+42 Gradle tasks up-to-date.
+
 The unit tests cover AQI/UV category boundaries, value formatting, missing/invalid response values and Repository response mapping with a fake API. These are local unit tests rather than end-to-end tests. Android Studio successfully ran the app on the emulator, where the UI and network behaviours listed above were observed. **The unit tests should be rerun after any further code changes before submission.**
 
 The test report is generated locally at `app/build/reports/tests/testDebugUnitTest/index.html` when the Gradle task is run. That generated build folder is not committed to Git.
