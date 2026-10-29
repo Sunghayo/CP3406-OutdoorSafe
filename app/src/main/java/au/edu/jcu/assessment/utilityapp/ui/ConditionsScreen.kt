@@ -1,0 +1,201 @@
+package au.edu.jcu.assessment.utilityapp.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import au.edu.jcu.assessment.utilityapp.OutdoorUiState
+import au.edu.jcu.assessment.utilityapp.model.AirQualitySnapshot
+import au.edu.jcu.assessment.utilityapp.model.AppSettings
+import au.edu.jcu.assessment.utilityapp.model.AqiScale
+import au.edu.jcu.assessment.utilityapp.model.HourlyReading
+import au.edu.jcu.assessment.utilityapp.ui.theme.OutdoorSafeTheme
+
+@Composable
+fun ConditionsScreen(state: OutdoorUiState, settings: AppSettings, onRefresh: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("OutdoorSafe", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("Before you head outside", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            OutlinedButton(onClick = onRefresh) { Text("Refresh") }
+        }
+        Spacer(Modifier.height(12.dp))
+        when (state) {
+            OutdoorUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(12.dp))
+                    Text("Checking outdoor conditions…")
+                }
+            }
+            is OutdoorUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(state.message, style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick = onRefresh) { Text("Try again") }
+                }
+            }
+            is OutdoorUiState.Success -> ConditionsContent(state.conditions, settings)
+        }
+    }
+}
+
+@Composable
+private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
+    val aqi = data.aqi(settings.aqiScale)
+    val aqiStatus = aqiLevel(aqi, settings.aqiScale)
+    val uvStatus = uvLevel(data.uvIndex)
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(settings.city.displayName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(settings.city.country, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text("Local ${displayTime(data.updatedAt)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        item {
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("OUTDOOR CONDITIONS AT A GLANCE", style = MaterialTheme.typography.labelMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MetricBlock(
+                            modifier = Modifier.weight(1f),
+                            label = if (settings.aqiScale == AqiScale.US) "US AIR QUALITY" else "EUROPEAN AQI",
+                            value = aqi?.toString() ?: "—",
+                            status = aqiStatus.title
+                        )
+                        MetricBlock(
+                            modifier = Modifier.weight(1f),
+                            label = "UV INDEX",
+                            value = displayValue(data.uvIndex),
+                            status = uvStatus.title
+                        )
+                    }
+                    HorizontalDivider()
+                    Text("Forecast model estimates, not live sensor readings.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        item {
+            Text("Plan your outdoor time", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        }
+        item { AdviceCard("Air quality", aqiStatus.title, aqiStatus.detail) }
+        item { AdviceCard("Sun exposure", uvStatus.title, uvStatus.detail) }
+        if (settings.showParticleDetails) {
+            item {
+                Text("Particle levels", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            }
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ParticleRow("PM2.5", data.pm25)
+                        HorizontalDivider()
+                        ParticleRow("PM10", data.pm10)
+                        Text("Concentration in µg/m³", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        if (data.hourly.isNotEmpty()) {
+            item { Text("Next hours", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
+            items(data.hourly, key = { it.time }) { reading -> HourRow(reading, settings) }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Data: Open-Meteo · Copernicus CAMS ENSEMBLE", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("UV and air quality estimates are guidance, not a guarantee of safety.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricBlock(modifier: Modifier, label: String, value: String, status: String) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall)
+        Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text(status, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun AdviceCard(title: String, status: String, detail: String) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(title, fontWeight = FontWeight.SemiBold)
+                Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(status, modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun ParticleRow(name: String, value: Double?) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(name, style = MaterialTheme.typography.bodyMedium)
+        Text(displayValue(value), fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun HourRow(reading: HourlyReading, settings: AppSettings) {
+    Card(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(displayTime(reading.time), modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
+            Column(horizontalAlignment = Alignment.End) {
+                Text("AQI ${reading.aqi(settings.aqiScale) ?: "—"}", style = MaterialTheme.typography.bodyMedium)
+                Text("UV ${displayValue(reading.uvIndex)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ConditionsPreview() {
+    OutdoorSafeTheme {
+        ConditionsScreen(
+            state = OutdoorUiState.Success(AirQualitySnapshot(
+                updatedAt = "2026-10-29T14:00", usAqi = 52, europeanAqi = 29, uvIndex = 6.4,
+                pm25 = 11.5, pm10 = 23.2, hourly = listOf(HourlyReading("2026-10-29T15:00", 55, 30, 4.5))
+            )),
+            settings = AppSettings(),
+            onRefresh = {}
+        )
+    }
+}
