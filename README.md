@@ -6,7 +6,7 @@ This project was developed from the **CP3406 MobileTech Utility App teaching tem
 
 ## Project Motivation
 
-The recent haze in Singapore made the impact of air quality on everyday activities more noticeable. I came across a news report about runners moving their training indoors because of the haze. According to an AFP report published by *The Standard*, more than 80 runners used the corridors of Marina Square shopping mall for a run before the shops opened. The report also described outdoor running sessions being cancelled because of the poor air quality [1].
+The recent haze in Singapore made the impact of air quality on everyday activities more noticeable. I came across a news report about runners moving their training indoors because of the haze. According to an AFP report published by *The Standard*, more than 80 runners used the corridors of Marina Square shopping mall for a run before the shops opened. The report also described outdoor running sessions being cancelled because of the poor air quality poor air quality [[1]](https://www.thestandard.com.hk/sports-updates/article/346786/Haze-drives-Singapore-runners-from-the-streets-to-shopping-malls).
 
 This is a practical example of why checking outdoor conditions can matter, especially for people planning a walk, commute or run. OutdoorSafe focuses on two pieces of information that are useful to check quickly before heading out: **air quality (AQI)** and **UV exposure**. The aim is not to predict whether an activity is completely safe, but to make relevant forecast information easier to understand at a glance.
 
