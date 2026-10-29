@@ -1,6 +1,7 @@
 package au.edu.jcu.assessment.utilityapp.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,13 +40,7 @@ import au.edu.jcu.assessment.utilityapp.ui.theme.OutdoorSafeTheme
 @Composable
 fun ConditionsScreen(state: OutdoorUiState, settings: AppSettings, onRefresh: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("OutdoorSafe", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text("Before you head outside", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            OutlinedButton(onClick = onRefresh) { Text("Refresh") }
-        }
+        ConditionsHeader(onRefresh)
         Spacer(Modifier.height(12.dp))
         when (state) {
             OutdoorUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -62,6 +58,31 @@ fun ConditionsScreen(state: OutdoorUiState, settings: AppSettings, onRefresh: ()
                 }
             }
             is OutdoorUiState.Success -> ConditionsContent(state.conditions, settings)
+        }
+    }
+}
+
+@Composable
+private fun ConditionsHeader(onRefresh: () -> Unit) {
+    val largeText = LocalDensity.current.fontScale >= 1.3f
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stackedHeader = largeText || maxWidth < 340.dp
+        if (stackedHeader) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("OutdoorSafe", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("Before you head outside", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedButton(onClick = onRefresh, modifier = Modifier.align(Alignment.End)) {
+                    Text("Refresh")
+                }
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("OutdoorSafe", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("Before you head outside", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                OutlinedButton(onClick = onRefresh) { Text("Refresh") }
+            }
         }
     }
 }
@@ -88,19 +109,39 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("OUTDOOR CONDITIONS AT A GLANCE", style = MaterialTheme.typography.labelMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MetricBlock(
-                            modifier = Modifier.weight(1f),
-                            label = if (settings.aqiScale == AqiScale.US) "US AIR QUALITY" else "EUROPEAN AQI",
-                            value = aqi?.toString() ?: "—",
-                            level = aqiStatus
-                        )
-                        MetricBlock(
-                            modifier = Modifier.weight(1f),
-                            label = "UV INDEX",
-                            value = displayValue(data.uvIndex),
-                            level = uvStatus
-                        )
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val stackedMetrics = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f
+                        if (stackedMetrics) {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                MetricBlock(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = if (settings.aqiScale == AqiScale.US) "US AIR QUALITY" else "EUROPEAN AQI",
+                                    value = aqi?.toString() ?: "—",
+                                    level = aqiStatus
+                                )
+                                MetricBlock(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = "UV INDEX",
+                                    value = displayValue(data.uvIndex),
+                                    level = uvStatus
+                                )
+                            }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                MetricBlock(
+                                    modifier = Modifier.weight(1f),
+                                    label = if (settings.aqiScale == AqiScale.US) "US AIR QUALITY" else "EUROPEAN AQI",
+                                    value = aqi?.toString() ?: "—",
+                                    level = aqiStatus
+                                )
+                                MetricBlock(
+                                    modifier = Modifier.weight(1f),
+                                    label = "UV INDEX",
+                                    value = displayValue(data.uvIndex),
+                                    level = uvStatus
+                                )
+                            }
+                        }
                     }
                     HorizontalDivider()
                     Text("Forecast model estimates, not live sensor readings.", style = MaterialTheme.typography.bodySmall)
