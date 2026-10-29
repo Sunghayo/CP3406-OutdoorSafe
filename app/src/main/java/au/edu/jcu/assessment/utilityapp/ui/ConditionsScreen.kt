@@ -66,7 +66,8 @@ fun ConditionsScreen(state: OutdoorUiState, settings: AppSettings, onRefresh: ()
 private fun ConditionsHeader(onRefresh: () -> Unit) {
     val largeText = LocalDensity.current.fontScale >= 1.3f
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val stackedHeader = largeText || maxWidth < 340.dp
+        val availableWidth = this.maxWidth
+        val stackedHeader = largeText || availableWidth < 340.dp
         if (stackedHeader) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("OutdoorSafe", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -110,7 +111,8 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("OUTDOOR CONDITIONS AT A GLANCE", style = MaterialTheme.typography.labelMedium)
                     BoxWithConstraints(Modifier.fillMaxWidth()) {
-                        val stackedMetrics = maxWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f
+                        val availableWidth = this.maxWidth
+                        val stackedMetrics = availableWidth < 300.dp || LocalDensity.current.fontScale >= 1.3f
                         if (stackedMetrics) {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MetricBlock(
