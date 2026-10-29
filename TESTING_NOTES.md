@@ -2,7 +2,7 @@
 
 **Test date:** 29 October 2026  
 **Environment:** Android Studio; Pixel 7 Android emulator (API 37); macOS  
-**Command used:** `bash gradlew :app:testDebugUnitTest`
+**Unit test command used:** `bash gradlew :app:testDebugUnitTest`
 
 | Check | Actual observation | Status |
 | --- | --- | --- |
@@ -17,7 +17,8 @@
 | Local unit tests | Gradle task ended with `BUILD SUCCESSFUL in 4s` | Passed |
 | Other screen sizes | Not yet tested | Not tested |
 | Dark mode | Palette defined in code; manual screenshot not supplied | Not tested |
-| Screen rotation / large font | Not yet tested | Not tested |
+| Screen rotation | Not tested | Not tested |
+| Larger system font on Pixel 7 | Header reflowed, AQI/UV cards stacked; Settings controls remained readable and scrollable | Passed |
 
 ## Issue encountered during testing
 
@@ -32,3 +33,12 @@ There was also a source-copy issue when transferring a UI improvement into the G
 - `docs/screenshots/offline-error.png` — disconnected state and retry button
 
 Screenshots support the visible UI behaviour. Details such as the exact live readings and the number of unit tests can change between runs; do not present screen values as universally fixed.
+
+## Additional accessibility evidence
+
+- `docs/screenshots/large-font-today.png` — Today screen with an enlarged system font and vertically stacked metrics
+- `docs/screenshots/large-font-settings.png` — Settings with enlarged font and extra spacing between radio options
+
+These checks were conducted on the Pixel 7 emulator on 29 October 2026. They do not demonstrate screen-reader support, rotation behaviour or coverage of other device sizes.
+
+After further code edits, rerun `bash gradlew :app:assembleDebug :app:testDebugUnitTest` before final submission.

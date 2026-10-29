@@ -6,9 +6,9 @@ This project was developed from the **CP3406 MobileTech Utility App teaching tem
 
 ## Project Motivation
 
-The recent haze in Singapore made the impact of air quality on everyday activities more noticeable. I came across a news report about runners moving their training indoors because of the haze. According to an AFP report published by *The Standard*, more than 80 runners used the corridors of Marina Square shopping mall for a run before the shops opened. The report also described outdoor running sessions being cancelled because of the poor air quality poor air quality [[1]](https://www.thestandard.com.hk/sports-updates/article/346786/Haze-drives-Singapore-runners-from-the-streets-to-shopping-malls).
+I came across an AFP news report about runners in Singapore adapting their training because of haze. The report described more than 80 runners using the corridors of Marina Square shopping mall before opening hours after poor air quality disrupted outdoor running sessions [[1]](https://www.thestandard.com.hk/sports-updates/article/346786/Haze-drives-Singapore-runners-from-the-streets-to-shopping-malls).
 
-This is a practical example of why checking outdoor conditions can matter, especially for people planning a walk, commute or run. OutdoorSafe focuses on two pieces of information that are useful to check quickly before heading out: **air quality (AQI)** and **UV exposure**. The aim is not to predict whether an activity is completely safe, but to make relevant forecast information easier to understand at a glance.
+This example made the everyday use case clearer to me: before a walk, commute or run, people may want a quick way to check outdoor conditions. OutdoorSafe therefore prioritises **air quality (AQI)** and **UV index** on one screen instead of adding unrelated weather features. It provides forecast-based information to support planning, **not a definitive judgement that an outdoor activity is safe**.
 
 ## Screenshots
 
@@ -20,7 +20,19 @@ This is a practical example of why checking outdoor conditions can matter, espec
 
 <img src="docs/screenshots/offline-error.png" alt="OutdoorSafe displays a connection error and Try again button when offline" width="260">
 
-Screenshots were captured on a Pixel 7 Android emulator on 29 October 2026. The reported AQI and UV values change with location and forecast time.
+Screenshots were captured on a Pixel 7 Android emulator on 29 October 2026. AQI and UV values vary with location and forecast time; the screenshots show examples rather than fixed readings.
+
+### Responsive layout: default versus larger system font
+
+| Default font size | Larger font size |
+| :--: | :--: |
+| <img src="docs/screenshots/today.png" alt="Default font size with AQI and UV cards side by side" width="280"> | <img src="docs/screenshots/large-font-today.png" alt="Larger system font with AQI and UV cards stacked vertically" width="280"> |
+
+**Larger font — Settings:**
+
+<img src="docs/screenshots/large-font-settings.png" alt="Settings with larger text and spaced city and AQI radio options" width="260">
+
+With a larger system font, the main screen moves **Refresh** onto its own row and stacks the AQI and UV cards vertically, so values and labels remain readable. The Settings screen uses more spacing, scrolls vertically, and allows selection through the radio-option rows rather than only the small radio icons. These changes were tested on the Pixel 7 emulator; they do not establish compatibility with every screen size or accessibility setting.
 
 ## Features
 
@@ -50,17 +62,17 @@ The app does **not** request GPS location, account sign-in, or personal informat
 4. Ensure the emulator has internet access to load the Open-Meteo forecast.
 5. Open **Settings** to change the city, AQI scale, or particle visibility. Return to **Today** to check the updated display.
 
-Run local unit tests from the project root:
+Build the debug app and run local unit tests from the project root:
 
 ```bash
-bash gradlew :app:testDebugUnitTest
+bash gradlew :app:assembleDebug :app:testDebugUnitTest
 ```
 
-On macOS, `bash gradlew ...` works even if the Gradle wrapper does not yet have executable permission.
+On macOS, `bash gradlew ...` works even if the Gradle wrapper does not yet have executable permission. To run tests only, use `bash gradlew :app:testDebugUnitTest`.
 
 ## Technical design
 
-The app uses **Kotlin, Jetpack Compose, Material 3, StateFlow, coroutines, Retrofit and Gson**. The implementation separates remote data, state handling and interface rendering.
+The app uses **Kotlin, Jetpack Compose, Material 3, StateFlow, coroutines, Retrofit and Gson**. The implementation separates remote data, state handling and interface rendering. This separation keeps networking out of the composables and makes data-handling logic easier to test independently.
 
 | File | Main responsibility |
 | --- | --- |
@@ -76,7 +88,9 @@ The app uses **Kotlin, Jetpack Compose, Material 3, StateFlow, coroutines, Retro
 
 **Data flow:** Open-Meteo API → Retrofit / Repository → ViewModel (`StateFlow`) → Jetpack Compose screens.
 
-The selected city triggers a new API request; changing the AQI scale or particle visibility updates the existing display state without an unnecessary location fetch.
+The selected city triggers a new API request; changing the AQI scale or particle visibility updates the existing display state without an unnecessary location fetch. The ViewModel exposes **loading, success and error** states, allowing Compose to show a progress indicator, usable data, or a retry action instead of an unexplained blank screen.
+
+**Responsive UI decision:** The Today screen uses `BoxWithConstraints` and the system font scale to choose a more suitable arrangement for the header and metric cards. Settings uses a vertically scrollable layout and selectable rows. These are deliberate choices to support the app's *at-a-glance* purpose when display settings change.
 
 ## Testing
 
@@ -91,9 +105,11 @@ The following tests were **performed on 29 October 2026** using Android Studio a
 | Show condition-dependent colours | Singapore US AQI Moderate displayed in yellow and UV Low in green |
 | Disable emulator internet and refresh | App showed a connection message and **Try again** instead of crashing |
 | Re-enable internet and select Try again | Normal dashboard returned with new values |
+| Increase system font size | Today displayed the header without overlapping Refresh; AQI and UV cards stacked vertically |
+| Check Settings with larger text | Location and AQI options remained readable, with expanded spacing and vertical scrolling |
 | Run local unit tests | `bash gradlew :app:testDebugUnitTest` returned **BUILD SUCCESSFUL** after correcting the repository test structure |
 
-The unit tests cover AQI/UV category boundaries, value formatting, missing/invalid response values and Repository response mapping with a fake API. These are local unit tests; the full Android build was additionally exercised through the working emulator screenshots above.
+The unit tests cover AQI/UV category boundaries, value formatting, missing/invalid response values and Repository response mapping with a fake API. These are local unit tests rather than end-to-end tests. Android Studio successfully ran the app on the emulator, where the UI and network behaviours listed above were observed. **The unit tests should be rerun after any further code changes before submission.**
 
 The test report is generated locally at `app/build/reports/tests/testDebugUnitTest/index.html` when the Gradle task is run. That generated build folder is not committed to Git.
 
@@ -104,6 +120,7 @@ The test report is generated locally at `app/build/reports/tests/testDebugUnitTe
 - **Error states:** No fake zero is shown when data is missing; the screen provides a retry action for network failures.
 - **Privacy:** Manual city choice avoids the need for a device location permission.
 - **Forecast limitations:** The data comes from atmospheric forecast models, **not live local air-quality sensors**. It may differ from local monitoring stations and should not be treated as a guarantee of safety.
+- **Responsive design:** Large-font layout was checked manually on Pixel 7. Other device sizes, rotation, screen-reader behaviour and full accessibility compliance have not been independently verified.
 - **Scope:** The app requires internet access and does not have offline caching, push notifications or persistent settings.
 
 ## Data sources and attribution
@@ -116,10 +133,10 @@ Data from **Open-Meteo Air Quality API**, including model data from the **Copern
 
 ### Project motivation reference
 
-[1] Agence France-Presse. (2026, October 28). *Haze drives Singapore runners from the streets to shopping malls*. The Standard. https://www.thestandard.com.hk/sports-updates/article/346786/Haze-drives-Singapore-runners-from-the-streets-to-shopping-malls
+[1] Agence France-Presse. (2026, October 28). *[Haze drives Singapore runners from the streets to shopping malls](https://www.thestandard.com.hk/sports-updates/article/346786/Haze-drives-Singapore-runners-from-the-streets-to-shopping-malls)*. The Standard.
 
 ## GenAI use and academic integrity
 
-Generative AI was used to assist with the initial app implementation, code structure, UI revisions, debugging, tests and documentation drafts. The project was opened and tested in Android Studio, including checking setting changes, unit tests, and network failure/recovery on an emulator. **The official assessment declaration should be completed separately, following the latest course instructions.**
+Generative AI was used to assist with the initial app implementation, code structure, UI revisions, debugging, tests and documentation drafts. The resulting code was opened and exercised in Android Studio, including checking setting changes, unit tests, network failure/recovery, and a larger system-font layout on an emulator. **The official assessment declaration should be completed separately, following the latest course instructions.**
 
 This repository records the project's development and the actual changes made during testing and refinement.
