@@ -54,7 +54,9 @@ class OutdoorRepositoryTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun missingCurrentSectionReportsError() = runBlocking {
-        repository(AirQualityResponse(current = null)).fetch(City.SINGAPORE)
+    fun missingCurrentSectionReportsError() {
+        runBlocking {
+            repository(AirQualityResponse(current = null)).fetch(City.SINGAPORE)
+        }
     }
 }
