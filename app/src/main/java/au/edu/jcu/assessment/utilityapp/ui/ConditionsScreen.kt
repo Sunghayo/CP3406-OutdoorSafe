@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import au.edu.jcu.assessment.utilityapp.OutdoorUiState
@@ -83,7 +84,7 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
         item {
             Card(
                 Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("OUTDOOR CONDITIONS AT A GLANCE", style = MaterialTheme.typography.labelMedium)
@@ -92,13 +93,13 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
                             modifier = Modifier.weight(1f),
                             label = if (settings.aqiScale == AqiScale.US) "US AIR QUALITY" else "EUROPEAN AQI",
                             value = aqi?.toString() ?: "—",
-                            status = aqiStatus.title
+                            level = aqiStatus
                         )
                         MetricBlock(
                             modifier = Modifier.weight(1f),
                             label = "UV INDEX",
                             value = displayValue(data.uvIndex),
-                            status = uvStatus.title
+                            level = uvStatus
                         )
                     }
                     HorizontalDivider()
@@ -109,8 +110,8 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
         item {
             Text("Plan your outdoor time", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
         }
-        item { AdviceCard("Air quality", aqiStatus.title, aqiStatus.detail) }
-        item { AdviceCard("Sun exposure", uvStatus.title, uvStatus.detail) }
+        item { AdviceCard("Air quality", aqiStatus) }
+        item { AdviceCard("Sun exposure", uvStatus) }
         if (settings.showParticleDetails) {
             item {
                 Text("Particle levels", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -141,25 +142,35 @@ private fun ConditionsContent(data: AirQualitySnapshot, settings: AppSettings) {
 }
 
 @Composable
-private fun MetricBlock(modifier: Modifier, label: String, value: String, status: String) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall)
-        Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Text(status, style = MaterialTheme.typography.labelMedium)
+private fun MetricBlock(modifier: Modifier, label: String, value: String, level: Level) {
+    val colors = statusColors(level.severity)
+    Surface(modifier = modifier, shape = MaterialTheme.shapes.medium, color = colors.background) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.foreground)
+            Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = colors.foreground)
+            Text(level.title, style = MaterialTheme.typography.labelMedium, color = colors.foreground)
+        }
     }
 }
 
 @Composable
-private fun AdviceCard(title: String, status: String, detail: String) {
+private fun AdviceCard(title: String, level: Level) {
+    val colors = statusColors(level.severity)
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(status, modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                Surface(shape = MaterialTheme.shapes.small, color = colors.background) {
+                    Text(
+                        level.title,
+                        modifier = Modifier.widthIn(max = 180.dp).padding(horizontal = 9.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.foreground,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
-            Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            Text(level.detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

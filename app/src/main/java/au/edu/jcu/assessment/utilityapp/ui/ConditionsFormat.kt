@@ -3,34 +3,36 @@ package au.edu.jcu.assessment.utilityapp.ui
 import au.edu.jcu.assessment.utilityapp.model.AqiScale
 import java.util.Locale
 
-data class Level(val title: String, val detail: String)
+enum class Severity { GOOD, FAIR, MODERATE, HIGH, VERY_HIGH, EXTREME, UNKNOWN }
+
+data class Level(val title: String, val detail: String, val severity: Severity)
 
 fun aqiLevel(value: Int?, scale: AqiScale): Level {
-    if (value == null || value < 0) return Level("Unavailable", "No AQI estimate for this location.")
+    if (value == null || value < 0) return Level("Unavailable", "No AQI estimate for this location.", Severity.UNKNOWN)
     return if (scale == AqiScale.US) when {
-        value <= 50 -> Level("Good", "Air quality is generally satisfactory.")
-        value <= 100 -> Level("Moderate", "Sensitive people may want to limit prolonged exertion.")
-        value <= 150 -> Level("Unhealthy for sensitive groups", "Sensitive groups should reduce prolonged outdoor exertion.")
-        value <= 200 -> Level("Unhealthy", "Consider reducing prolonged outdoor exertion.")
-        value <= 300 -> Level("Very unhealthy", "Avoid prolonged outdoor exertion when possible.")
-        else -> Level("Hazardous", "Avoid outdoor exertion when possible.")
+        value <= 50 -> Level("Good", "Air quality is generally satisfactory.", Severity.GOOD)
+        value <= 100 -> Level("Moderate", "Sensitive people may want to limit prolonged exertion.", Severity.MODERATE)
+        value <= 150 -> Level("Unhealthy for sensitive groups", "Sensitive groups should reduce prolonged outdoor exertion.", Severity.HIGH)
+        value <= 200 -> Level("Unhealthy", "Consider reducing prolonged outdoor exertion.", Severity.VERY_HIGH)
+        value <= 300 -> Level("Very unhealthy", "Avoid prolonged outdoor exertion when possible.", Severity.EXTREME)
+        else -> Level("Hazardous", "Avoid outdoor exertion when possible.", Severity.EXTREME)
     } else when {
-        value <= 20 -> Level("Good", "Air quality is generally satisfactory.")
-        value <= 40 -> Level("Fair", "Most people can continue normal outdoor activities.")
-        value <= 60 -> Level("Moderate", "Sensitive people may want to limit prolonged exertion.")
-        value <= 80 -> Level("Poor", "Consider reducing prolonged outdoor exertion.")
-        value <= 100 -> Level("Very poor", "Avoid prolonged outdoor exertion when possible.")
-        else -> Level("Extremely poor", "Avoid outdoor exertion when possible.")
+        value <= 20 -> Level("Good", "Air quality is generally satisfactory.", Severity.GOOD)
+        value <= 40 -> Level("Fair", "Most people can continue normal outdoor activities.", Severity.FAIR)
+        value <= 60 -> Level("Moderate", "Sensitive people may want to limit prolonged exertion.", Severity.MODERATE)
+        value <= 80 -> Level("Poor", "Consider reducing prolonged outdoor exertion.", Severity.HIGH)
+        value <= 100 -> Level("Very poor", "Avoid prolonged outdoor exertion when possible.", Severity.VERY_HIGH)
+        else -> Level("Extremely poor", "Avoid outdoor exertion when possible.", Severity.EXTREME)
     }
 }
 
 fun uvLevel(value: Double?): Level = when {
-    value == null || !value.isFinite() || value < 0 -> Level("Unavailable", "No UV estimate for this location.")
-    value < 3 -> Level("Low", "Sun protection may still be needed during extended exposure.")
-    value < 6 -> Level("Moderate", "Consider shade and sun protection outdoors.")
-    value < 8 -> Level("High", "Use shade, protective clothing and sunscreen.")
-    value < 11 -> Level("Very high", "Limit midday sun exposure and use protection.")
-    else -> Level("Extreme", "Minimise midday sun exposure and use protection.")
+    value == null || !value.isFinite() || value < 0 -> Level("Unavailable", "No UV estimate for this location.", Severity.UNKNOWN)
+    value < 3 -> Level("Low", "Sun protection may still be needed during extended exposure.", Severity.GOOD)
+    value < 6 -> Level("Moderate", "Consider shade and sun protection outdoors.", Severity.MODERATE)
+    value < 8 -> Level("High", "Use shade, protective clothing and sunscreen.", Severity.HIGH)
+    value < 11 -> Level("Very high", "Limit midday sun exposure and use protection.", Severity.VERY_HIGH)
+    else -> Level("Extreme", "Minimise midday sun exposure and use protection.", Severity.EXTREME)
 }
 
 fun displayValue(value: Double?, decimals: Int = 1): String =
